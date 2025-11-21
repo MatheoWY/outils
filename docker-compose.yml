@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lovable-carte-france
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+      - PORT=80
+      # Variables d'environnement (à personnaliser via .env)
+      - GITHUB_PAT=${GITHUB_PAT}
+      - REPO_OWNER=${REPO_OWNER:-MatheoWY}
+      - REPO_NAME=${REPO_NAME:-signatures}
+      - BRANCH=${BRANCH:-main}
+      - WORKANDYOU_API_URL=${WORKANDYOU_API_URL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - ALLOWED_DOMAIN=${ALLOWED_DOMAIN:-workandyou.fr}
+      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:80/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  app-network:
+    driver: bridge
+
