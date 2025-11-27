@@ -1,6 +1,6 @@
-# Méthode Work and You - Carte Interactive France
+# Outils Work&You
 
-Application web interactive de visualisation de la France avec gestion d'agences et de personnes.
+Plateforme d'outils internes Work&You comprenant la gestion des agences, la génération de signatures et la méthode Work&You.
 
 ## Technologies
 
@@ -60,10 +60,10 @@ docker-compose up
 
 ## Fonctionnalités
 
-- Carte interactive de la France
-- Visualisation des agences par département
-- Gestion des personnes et des équipes
-- Flux d'activités
-- Méthode Work and You
-- Génération de signatures
+- 🗺️ Carte interactive de la France
+- 🏢 Visualisation des agences par département
+- 👥 Gestion des personnes et des équipes
+- 📊 Flux d'activités
+- 🧠 Méthode Work&You (analyse documentaire IA)
+- ✍️ Génération de signatures professionnelles
 

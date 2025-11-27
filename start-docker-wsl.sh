@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🐳 Démarrage du projet Lovable Carte France dans Docker WSL 2"
+echo "🐳 Démarrage du projet Outils Work&You dans Docker WSL 2"
 echo ""
 
 # Vérifier si Docker est installé

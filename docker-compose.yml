@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: lovable-carte-france
+    container_name: outils-workandyou
     ports:
       - "80:80"
     environment:

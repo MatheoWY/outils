@@ -1,7 +1,9 @@
 import { useRef, useState, useEffect, DragEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UploadCloud, FileText, User2, Brain, Mic, X, Copy, Download } from "lucide-react";
+import { UploadCloud, FileText, User2, Brain, Mic, X, Copy, Download, Database } from "lucide-react";
+import { NicokaSearchModal } from "@/components/NicokaSearchModal";
+import { NicokaConfigInfo } from "@/components/NicokaConfigInfo";
 
 declare global {
   interface Window {
@@ -124,6 +126,7 @@ Une fois le rapport brut validé par le consultant :
   const clientRef = useRef<HTMLDivElement | null>(null);
   const consultantRef = useRef<HTMLDivElement | null>(null);
   const candidateRef = useRef<HTMLDivElement | null>(null);
+  const [nicokaModalOpen, setNicokaModalOpen] = useState(false);
 
   const loadScript = (src: string) =>
     new Promise<void>((resolve, reject) => {
@@ -505,6 +508,11 @@ Une fois le rapport brut validé par le consultant :
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleNicokaDocuments = (newFiles: File[]) => {
+    addFiles(newFiles);
+    setNicokaModalOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="p-6">
@@ -571,7 +579,24 @@ Une fois le rapport brut validé par le consultant :
             font-weight: 700;
           }
         `}</style>
+        
+        {/* Information de configuration Nicoka */}
+        <NicokaConfigInfo />
+        
         <form onSubmit={handleSubmit} className="space-y-6">
+
+          {/* Bouton Nicoka Import */}
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setNicokaModalOpen(true)}
+              className="gap-2"
+            >
+              <Database className="w-4 h-4" />
+              Importer depuis Nicoka ATS
+            </Button>
+          </div>
 
           {/* Grande zone de glisser-déposer */}
           <section
@@ -832,6 +857,13 @@ Une fois le rapport brut validé par le consultant :
             </div>
           </section>
         )}
+
+        {/* Modal de recherche Nicoka */}
+        <NicokaSearchModal
+          open={nicokaModalOpen}
+          onOpenChange={setNicokaModalOpen}
+          onSelectDocuments={handleNicokaDocuments}
+        />
       </main>
     </div>
   );

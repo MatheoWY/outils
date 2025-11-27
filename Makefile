@@ -3,11 +3,11 @@
 # Variables
 COMPOSE_FILE := docker-compose.yml
 COMPOSE_DEV_FILE := docker-compose.dev.yml
-CONTAINER_NAME := lovable-carte-france
+CONTAINER_NAME := outils-workandyou
 
 # Commandes d'aide
 help: ## Afficher l'aide
-	@echo "🐳 Docker WSL 2 - Lovable Carte France"
+	@echo "🐳 Docker WSL 2 - Outils Work&You"
 	@echo ""
 	@echo "Commandes disponibles:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -54,7 +54,7 @@ logs: ## Voir les logs en temps réel
 
 status: ## Voir le statut des conteneurs
 	@echo "📊 Statut des conteneurs Docker:"
-	@docker ps -a | grep lovable || echo "Aucun conteneur trouvé"
+	@docker ps -a | grep outils || echo "Aucun conteneur trouvé"
 
 # Build et rebuild
 build: start-docker ## Construire l'image

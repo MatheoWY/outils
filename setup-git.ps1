@@ -11,7 +11,7 @@ git remote add origin git@github.com:MatheoWY/m-thode-workandyou.git
 git add .
 
 # Créer le commit initial
-git commit -m "Initial commit: Projet carte France avec React + TypeScript"
+git commit -m "Initial commit: Outils Work&You - Plateforme interne"
 
 # Renommer la branche en main
 git branch -M main

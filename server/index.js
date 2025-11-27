@@ -12,19 +12,24 @@ import { fileURLToPath } from "url";
 // Petite utilitaire d'attente
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Load env (use .env if present)
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const appRoot = path.resolve(__dirname, "..");
+
+// Charge .env puis .env.local pour partager la config client/serveur
+[".env", ".env.local"].forEach((filename) => {
+  const envPath = path.join(appRoot, filename);
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath, override: true });
+  }
+});
 const distDir = path.join(appRoot, "dist");
 const publicSignaturesDir = path.join(appRoot, "public", "signatures");
 
 const app = express();
 
 // Configuration via env
-const GITHUB_PAT = process.env.GITHUB_PAT || "";
+const GITHUB_PAT = process.env.GITHUB_PAT || process.env.VITE_GITHUB_PAT || "";
 const REPO_OWNER = process.env.REPO_OWNER || "MatheoWY";
 const REPO_NAME = process.env.REPO_NAME || "signatures";
 const BRANCH = process.env.BRANCH || "main";
@@ -36,8 +41,12 @@ const SESSION_SECRET = process.env.SESSION_SECRET || "";
 const ALLOWED_DOMAIN = (process.env.ALLOWED_DOMAIN || "workandyou.fr").toLowerCase();
 const GOOGLE_CALLBACK_URL =
   process.env.GOOGLE_CALLBACK_URL || `http://localhost:${PORT}/auth/google/callback`;
-// Auth désactivée partout (dev et prod)
-const AUTH_ENABLED = false;
+// Auth activée en production si les identifiants Google sont configurés
+const AUTH_ENABLED = 
+  process.env.NODE_ENV === "production" && 
+  GOOGLE_CLIENT_ID && 
+  GOOGLE_CLIENT_SECRET && 
+  SESSION_SECRET;
 
 function parseCookies(header) {
   const out = {};
@@ -91,9 +100,17 @@ passport.deserializeUser((obj, done) => {
 if (!AUTH_ENABLED) {
   // eslint-disable-next-line no-console
   console.warn(
-    "Auth Google désactivée (variables manquantes). Les routes protégées sont ouvertes en DEV."
+    `⚠️  AUTH DÉSACTIVÉE - Mode: ${process.env.NODE_ENV || "development"}`
+  );
+  // eslint-disable-next-line no-console
+  console.warn(
+    "   En production, configurez GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET et SESSION_SECRET"
   );
 } else {
+  // eslint-disable-next-line no-console
+  console.log(`🔒 AUTH ACTIVÉE - Domaine autorisé: ${ALLOWED_DOMAIN}`);
+  // eslint-disable-next-line no-console
+  console.log(`   Callback URL: ${GOOGLE_CALLBACK_URL}`);
   passport.use(
     new GoogleStrategy(
       {
@@ -298,7 +315,9 @@ async function githubPutFile(owner, repo, branch, filePath, contentBase64, messa
 app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => {
   try {
     if (!GITHUB_PAT) {
-      return res.status(500).json({ error: "GITHUB_PAT non configuré sur le serveur." });
+      return res.status(500).json({
+        error: "GITHUB_PAT non configuré (ajoutez GITHUB_PAT ou VITE_GITHUB_PAT dans .env.local côté serveur).",
+      });
     }
     if (!req.file) {
       return res.status(400).json({ error: "Aucun fichier reçu." });

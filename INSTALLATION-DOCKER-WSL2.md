@@ -484,7 +484,7 @@ docker stats
 ### Ouvrir un shell dans un conteneur
 
 ```bash
-docker exec -it lovable-carte-france sh
+docker exec -it outils-workandyou sh
 ```
 
 Pour sortir : `exit`

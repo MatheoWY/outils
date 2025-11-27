@@ -1,7 +1,7 @@
 # Script PowerShell pour lancer le projet dans Docker WSL 2
 # Exécutez ce script depuis PowerShell Windows
 
-Write-Host "🐳 Démarrage du projet Lovable Carte France dans Docker WSL 2" -ForegroundColor Cyan
+Write-Host "🐳 Démarrage du projet Outils Work&You dans Docker WSL 2" -ForegroundColor Cyan
 Write-Host ""
 
 # Obtenir le chemin du projet
