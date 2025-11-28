@@ -23,7 +23,7 @@ module.exports = {
     {
       name: 'workandyou-python',
       script: 'main.py',
-      interpreter: 'venv/bin/python',
+      interpreter: path.resolve(__dirname, '../../methode workandyou/venv/bin/python'),
       args: ['-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', '8000'],
       cwd: path.resolve(__dirname, '../../methode workandyou'),
       instances: 1,
