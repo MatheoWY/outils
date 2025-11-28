@@ -1,0 +1,131 @@
+<body>
+    <h2>Analyseur de Documents (CV, Offres...)</h2>
+    
+    <form id="analysisForm">
+        <div>
+            <label for="prompt">Votre question / prompt :</label><br>
+            <textarea id="prompt" name="prompt" rows="4" style="width: 100%;"></textarea>
+        </div>
+        
+        <div>
+            <label for="files">Vos fichiers (PDF) :</label><br>
+            <input type="file" id="files" name="files" multiple accept=".pdf">
+        </div>
+        
+        <button type="submit">Lancer l'analyse</button>
+    </form>
+    
+    <h3>Résultat :</h3>
+    <div id="loader" style="display: none;">🔄 Analyse en cours... Cela peut prendre 1 à 2 minutes...</div>
+    <div id="result"></div>
+
+    <hr>
+
+    <div id="reportsContainer" style="display: none;">
+        <h3>🧾 Rapport brut (interne)</h3>
+        <div style="margin-bottom: 8px;">
+            <button type="button" onclick="copyText('rawReport')">Copier</button>
+            <button type="button" onclick="downloadPdf('rawReport','Rapport_brut')">Télécharger PDF</button>
+        </div>
+        <textarea id="rawReport" rows="12" style="width: 100%;"></textarea>
+
+        <h3 style="margin-top: 24px;">📄 Rapport Client</h3>
+        <div style="margin-bottom: 8px;">
+            <button type="button" onclick="copyText('clientReport')">Copier</button>
+            <button type="button" onclick="downloadPdf('clientReport','Rapport_Client')">Télécharger PDF</button>
+        </div>
+        <textarea id="clientReport" rows="12" style="width: 100%;"></textarea>
+
+        <h3 style="margin-top: 24px;">🧠 Rapport Consultant</h3>
+        <div style="margin-bottom: 8px;">
+            <button type="button" onclick="copyText('consultantReport')">Copier</button>
+            <button type="button" onclick="downloadPdf('consultantReport','Rapport_Consultant')">Télécharger PDF</button>
+        </div>
+        <textarea id="consultantReport" rows="12" style="width: 100%;"></textarea>
+
+        <h3 style="margin-top: 24px;">💬 Rapport Candidat</h3>
+        <div style="margin-bottom: 8px;">
+            <button type="button" onclick="copyText('candidateReport')">Copier</button>
+            <button type="button" onclick="downloadPdf('candidateReport','Rapport_Candidat')">Télécharger PDF</button>
+        </div>
+        <textarea id="candidateReport" rows="12" style="width: 100%;"></textarea>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        function copyText(textareaId) {
+            const el = document.getElementById(textareaId);
+            if (!el) return;
+            navigator.clipboard.writeText(el.value || "").then(() => {
+                alert("Texte copié dans le presse-papiers.");
+            }).catch(() => {
+                alert("Impossible de copier le texte.");
+            });
+        }
+
+        function downloadPdf(textareaId, filename) {
+            const el = document.getElementById(textareaId);
+            if (!el) return;
+            const content = el.value || "";
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: "pt", format: "a4" });
+            const margin = 40;
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const maxWidth = pageWidth - margin * 2;
+            const lines = doc.splitTextToSize(content, maxWidth);
+            let y = margin;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+            for (let i = 0; i < lines.length; i++) {
+                if (y > pageHeight - margin) {
+                    doc.addPage();
+                    y = margin;
+                }
+                doc.text(lines[i], margin, y);
+                y += 16;
+            }
+            doc.save(`${filename}.pdf`);
+        }
+
+        document.getElementById("analysisForm").addEventListener("submit", async (e) => {
+            e.preventDefault(); // Empêche le rechargement de la page
+
+            const formData = new FormData(e.target); // Récupère prompt + fichiers
+            
+            document.getElementById("loader").style.display = "block";
+            document.getElementById("result").innerText = "";
+
+            try {
+                // Appel au backend de VOTRE SITE (pas Runpod directement)
+                const response = await fetch("/submit-analysis", {
+                    method: "POST",
+                    body: formData 
+                    // Pas besoin de headers, FormData le gère
+                });
+                
+                const data = await response.json();
+
+                if (data.error) {
+                    document.getElementById("result").innerText = "Erreur: " + data.error;
+                    document.getElementById("reportsContainer").style.display = "none";
+                } else {
+                    // On attend un JSON avec 4 clés : raw_report, client_report, consultant_report, candidate_report
+                    document.getElementById("rawReport").value = data.raw_report || "";
+                    document.getElementById("clientReport").value = data.client_report || "";
+                    document.getElementById("consultantReport").value = data.consultant_report || "";
+                    document.getElementById("candidateReport").value = data.candidate_report || "";
+                    document.getElementById("reportsContainer").style.display = "block";
+                    document.getElementById("result").innerText = "Rapports générés.";
+                }
+
+            } catch (error) {
+                document.getElementById("result").innerText = "Erreur de connexion: " + error;
+                document.getElementById("reportsContainer").style.display = "none";
+            } finally {
+                document.getElementById("loader").style.display = "none";
+            }
+        });
+    </script>
+</body>
+</html>
