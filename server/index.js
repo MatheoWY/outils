@@ -8,6 +8,7 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { fileURLToPath } from "url";
+import { createProxyMiddleware } from "http-proxy-middleware";
 
 // Petite utilitaire d'attente
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -100,6 +101,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET || "";
 const ALLOWED_DOMAIN = (process.env.ALLOWED_DOMAIN || "workandyou.fr").toLowerCase();
 const GOOGLE_CALLBACK_URL =
   process.env.GOOGLE_CALLBACK_URL || `http://localhost:${PORT}/auth/google/callback`;
+const N8N_URL = process.env.N8N_URL || "http://n8n:5678";
 // Auth activée en production si les identifiants Google sont configurés
 const AUTH_ENABLED = 
   process.env.NODE_ENV === "production" && 
@@ -583,6 +585,29 @@ Une fois le rapport brut validé par le consultant :
     res.status(500).json({ error: String(err?.message || err) });
   }
 });
+
+// Proxy vers n8n (protégé par auth Google)
+app.use(
+  "/n8n",
+  requireAuth,
+  createProxyMiddleware({
+    target: N8N_URL,
+    changeOrigin: true,
+    ws: true, // Support WebSocket
+    pathRewrite: {
+      "^/n8n": "", // Enlever /n8n du chemin
+    },
+    onProxyReq: (proxyReq, req) => {
+      // eslint-disable-next-line no-console
+      console.log(`[n8n proxy] ${req.method} ${req.url} -> ${N8N_URL}${req.url.replace("/n8n", "")}`);
+    },
+    onError: (err, req, res) => {
+      // eslint-disable-next-line no-console
+      console.error("[n8n proxy] Error:", err.message);
+      res.status(502).json({ error: "Erreur proxy n8n", details: err.message });
+    },
+  })
+);
 
 // Serve the SPA build when available (production)
 if (fs.existsSync(distDir)) {

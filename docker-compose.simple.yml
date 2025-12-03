@@ -54,8 +54,8 @@ services:
   # Service Python pour l'analyse (Méthode Work&You)
   methode-api:
     build:
-      context: ./methode workandyou
-      dockerfile: ../Dockerfile.methode
+      context: .
+      dockerfile: Dockerfile.methode
     container_name: workandyou-methode-api
     environment:
       - RUNPOD_API_URL=${RUNPOD_API_URL}
