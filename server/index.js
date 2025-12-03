@@ -586,23 +586,31 @@ Une fois le rapport brut validé par le consultant :
 
 // Serve the SPA build when available (production)
 if (fs.existsSync(distDir)) {
-  app.use(
-    requireAuth,
-    express.static(distDir, {
-      setHeaders: (res) => {
+  // Servir les assets statiques (CSS, JS, images) SANS auth (nécessaires pour le chargement de la page)
+  app.use("/assets", express.static(path.join(distDir, "assets"), {
+    setHeaders: (res) => {
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    },
+  }));
+
+  // Favicon et autres fichiers publics
+  app.use(express.static(distDir, {
+    index: false, // Ne pas servir index.html automatiquement
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
         res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        res.setHeader("Pragma", "no-cache");
-        res.setHeader("Expires", "0");
-      },
-    })
-  );
+      } else {
+        res.setHeader("Cache-Control", "public, max-age=31536000");
+      }
+    },
+  }));
 
   // Also serve the embedded static signatures assets if needed (safety)
   if (fs.existsSync(publicSignaturesDir)) {
     app.use("/signatures", requireAuth, express.static(publicSignaturesDir));
   }
 
-  // SPA fallback
+  // SPA fallback - TOUTES les routes HTML nécessitent l'authentification
   app.get("*", requireAuth, (_req, res) => {
     const indexFile = path.join(distDir, "index.html");
     res.sendFile(indexFile);

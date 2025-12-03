@@ -1,0 +1,46 @@
+# Dockerfile unifié - Application complète avec authentification
+# Build tous les frontends et les sert via Express avec auth Google
+
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Copier les dépendances
+COPY package*.json ./
+RUN npm ci
+
+# Copier tout le code source
+COPY . .
+
+# Build le frontend principal (contient toutes les pages)
+ENV NODE_ENV=production
+RUN npm run build
+
+# Stage de production
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Installer les dépendances de production uniquement
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copier le serveur
+COPY server ./server
+
+# Copier le build frontend
+COPY --from=build /app/dist ./dist
+
+# Copier les fichiers statiques publics
+COPY public ./public
+
+# Exposer le port
+EXPOSE 3000
+
+# Variables d'environnement par défaut
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Démarrer le serveur Node.js
+CMD ["node", "server/index.js"]
+
