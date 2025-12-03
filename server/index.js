@@ -419,7 +419,8 @@ app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => 
   }
 });
 
-app.get("/api/flux-counts", requireAuth, async (_req, res) => {
+// API publique (pas d'auth requise) car appelée depuis le service Flux
+app.get("/api/flux-counts", async (_req, res) => {
   const results = {};
   const errors = {};
   await Promise.all(
