@@ -1,0 +1,35 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+dist/
+build/
+*.egg
+
+# Tests
+test_*.py
+
+# Documentation
+*.md
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Environnement
+.env
+venv/
+
+# Logs
+*.log
+
+# Système
+.DS_Store
+desktop.ini
