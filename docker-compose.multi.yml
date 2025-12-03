@@ -16,8 +16,10 @@ services:
     container_name: workandyou-nginx
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx.multi.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - carte
       - flux
