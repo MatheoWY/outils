@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Map, Activity, Brain, PenLine, Sparkles } from "lucide-react";
+import { Map, Activity, Brain, PenLine, Sparkles, Workflow } from "lucide-react";
 
 const Home = () => {
   return (
@@ -23,7 +23,7 @@ const Home = () => {
       </header>
 
       <main className="container mx-auto px-4 pb-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
           <Link to="/carte" className="group block">
             <Card className="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
               <CardHeader className="flex flex-row items-center gap-4">
@@ -94,7 +94,26 @@ const Home = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground">
-                  Modèles prêts à l’emploi et personnalisation rapide.
+                  Modèles prêts à l'emploi et personnalisation rapide.
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to="/n8n" className="group block">
+            <Card className="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+              <CardHeader className="flex flex-row items-center gap-4">
+                <div className="rounded-xl bg-primary/10 text-primary p-3">
+                  <Workflow className="w-6 h-6" />
+                </div>
+                <div>
+                  <CardTitle>n8n Automation</CardTitle>
+                  <CardDescription>Automatisez vos workflows métier.</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">
+                  Connectez vos applications et automatisez vos processus.
                 </div>
               </CardContent>
             </Card>

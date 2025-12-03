@@ -1,0 +1,202 @@
+# Makefile pour l'architecture Docker multi-services
+# Usage: make -f Makefile.multi [command]
+
+.PHONY: help start stop restart logs ps build clean rebuild
+
+# Variables
+COMPOSE_FILE=docker-compose.multi.yml
+COMPOSE=docker-compose -f $(COMPOSE_FILE)
+
+# Couleurs pour les messages
+RED=\033[0;31m
+GREEN=\033[0;32m
+YELLOW=\033[1;33m
+CYAN=\033[0;36m
+NC=\033[0m # No Color
+
+help: ## Afficher cette aide
+	@echo "$(CYAN)════════════════════════════════════════════════$(NC)"
+	@echo "$(CYAN)  Work&You - Architecture Multi-Services$(NC)"
+	@echo "$(CYAN)════════════════════════════════════════════════$(NC)"
+	@echo ""
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-15s$(NC) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(YELLOW)Services disponibles:$(NC)"
+	@echo "  • nginx       - Reverse proxy"
+	@echo "  • carte       - Carte Work&You"
+	@echo "  • flux        - Check Flux"
+	@echo "  • signatures  - Signatures (Frontend + Node.js)"
+	@echo "  • methode     - Méthode Work&You (Frontend + Python)"
+	@echo "  • n8n         - n8n Automation (Workflow)"
+	@echo ""
+
+start: ## Démarrer tous les services
+	@echo "$(GREEN)🚀 Démarrage de tous les services...$(NC)"
+	$(COMPOSE) up -d
+	@echo "$(GREEN)✅ Services démarrés!$(NC)"
+	@echo ""
+	@echo "$(CYAN)📍 URLs d'accès:$(NC)"
+	@echo "  🏠 Page d'accueil:     http://localhost/"
+	@echo "  🗺️  Carte Work&You:    http://localhost/carte"
+	@echo "  📊 Check Flux:         http://localhost/flux"
+	@echo "  ✍️  Signatures:         http://localhost/signatures"
+	@echo "  🧠 Méthode Work&You:   http://localhost/methode"
+	@echo "  ⚙️  n8n Automation:     http://localhost/n8n"
+	@echo ""
+
+start-%: ## Démarrer un service spécifique (ex: make start-carte)
+	@echo "$(GREEN)🚀 Démarrage du service $*...$(NC)"
+	$(COMPOSE) up -d $*
+	@echo "$(GREEN)✅ Service $* démarré!$(NC)"
+
+stop: ## Arrêter tous les services
+	@echo "$(YELLOW)🛑 Arrêt de tous les services...$(NC)"
+	$(COMPOSE) down
+	@echo "$(GREEN)✅ Services arrêtés!$(NC)"
+
+stop-%: ## Arrêter un service spécifique (ex: make stop-carte)
+	@echo "$(YELLOW)🛑 Arrêt du service $*...$(NC)"
+	$(COMPOSE) stop $*
+	@echo "$(GREEN)✅ Service $* arrêté!$(NC)"
+
+restart: ## Redémarrer tous les services
+	@echo "$(YELLOW)🔄 Redémarrage de tous les services...$(NC)"
+	$(COMPOSE) restart
+	@echo "$(GREEN)✅ Services redémarrés!$(NC)"
+
+restart-%: ## Redémarrer un service spécifique (ex: make restart-carte)
+	@echo "$(YELLOW)🔄 Redémarrage du service $*...$(NC)"
+	$(COMPOSE) restart $*
+	@echo "$(GREEN)✅ Service $* redémarré!$(NC)"
+
+logs: ## Afficher les logs de tous les services
+	$(COMPOSE) logs -f
+
+logs-%: ## Afficher les logs d'un service (ex: make logs-carte)
+	$(COMPOSE) logs -f $*
+
+ps: ## Afficher l'état des conteneurs
+	@echo "$(CYAN)📊 État des services:$(NC)"
+	@echo ""
+	$(COMPOSE) ps
+
+build: ## Builder tous les services
+	@echo "$(CYAN)🔨 Build de tous les services...$(NC)"
+	$(COMPOSE) build
+	@echo "$(GREEN)✅ Build terminé!$(NC)"
+
+build-%: ## Builder un service spécifique (ex: make build-carte)
+	@echo "$(CYAN)🔨 Build du service $*...$(NC)"
+	$(COMPOSE) build $*
+	@echo "$(GREEN)✅ Build de $* terminé!$(NC)"
+
+rebuild: ## Rebuild et redémarrer tous les services
+	@echo "$(CYAN)🔨 Rebuild et redémarrage...$(NC)"
+	$(COMPOSE) up -d --build
+	@echo "$(GREEN)✅ Rebuild et redémarrage terminés!$(NC)"
+
+rebuild-%: ## Rebuild et redémarrer un service (ex: make rebuild-carte)
+	@echo "$(CYAN)🔨 Rebuild et redémarrage du service $*...$(NC)"
+	$(COMPOSE) up -d --build $*
+	@echo "$(GREEN)✅ Rebuild de $* terminé!$(NC)"
+
+clean: ## Arrêter et supprimer les conteneurs, volumes et réseaux
+	@echo "$(RED)🧹 Nettoyage complet...$(NC)"
+	$(COMPOSE) down -v
+	@echo "$(GREEN)✅ Nettoyage terminé!$(NC)"
+
+clean-all: ## Nettoyer complètement (conteneurs, volumes, images)
+	@echo "$(RED)🧹 Nettoyage complet (incluant images)...$(NC)"
+	$(COMPOSE) down -v --rmi all
+	@echo "$(GREEN)✅ Nettoyage complet terminé!$(NC)"
+
+health: ## Vérifier le health check de tous les services
+	@echo "$(CYAN)🏥 Vérification de la santé des services...$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Nginx (global):$(NC)"
+	@curl -s http://localhost/health || echo "$(RED)❌ Nginx non accessible$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Signatures API:$(NC)"
+	@curl -s http://localhost/api/health | jq '.' 2>/dev/null || echo "$(RED)❌ API Signatures non accessible$(NC)"
+	@echo ""
+
+dev: ## Mode développement (logs en temps réel)
+	@echo "$(CYAN)🔧 Mode développement - Logs en temps réel$(NC)"
+	@echo "$(YELLOW)Appuyez sur Ctrl+C pour arrêter$(NC)"
+	@echo ""
+	$(COMPOSE) up
+
+shell-%: ## Ouvrir un shell dans un conteneur (ex: make shell-carte)
+	@echo "$(CYAN)🐚 Ouverture d'un shell dans le conteneur $*...$(NC)"
+	$(COMPOSE) exec $* sh
+
+# Commandes avancées
+
+pull: ## Télécharger les images de base
+	@echo "$(CYAN)📥 Téléchargement des images...$(NC)"
+	docker pull node:20-alpine
+	docker pull nginx:alpine
+	docker pull python:3.11-slim
+	@echo "$(GREEN)✅ Images téléchargées!$(NC)"
+
+prune: ## Nettoyer le système Docker (images, volumes, etc.)
+	@echo "$(RED)🧹 Nettoyage du système Docker...$(NC)"
+	docker system prune -a
+	@echo "$(GREEN)✅ Nettoyage système terminé!$(NC)"
+
+stats: ## Afficher les statistiques d'utilisation des ressources
+	@echo "$(CYAN)📊 Statistiques des conteneurs:$(NC)"
+	@echo ""
+	docker stats --no-stream
+
+network: ## Afficher les informations du réseau Docker
+	@echo "$(CYAN)🌐 Informations du réseau workandyou-network:$(NC)"
+	@echo ""
+	docker network inspect workandyou-network 2>/dev/null || echo "$(RED)❌ Réseau non trouvé$(NC)"
+
+update: ## Mettre à jour et rebuild tous les services
+	@echo "$(CYAN)🔄 Mise à jour et rebuild...$(NC)"
+	git pull
+	$(COMPOSE) pull
+	$(COMPOSE) up -d --build
+	@echo "$(GREEN)✅ Mise à jour terminée!$(NC)"
+
+# Commandes de test
+
+test-carte: ## Tester le service carte
+	@echo "$(CYAN)🧪 Test du service carte...$(NC)"
+	@curl -s http://localhost/carte > /dev/null && echo "$(GREEN)✅ Carte OK$(NC)" || echo "$(RED)❌ Carte KO$(NC)"
+
+test-flux: ## Tester le service flux
+	@echo "$(CYAN)🧪 Test du service flux...$(NC)"
+	@curl -s http://localhost/flux > /dev/null && echo "$(GREEN)✅ Flux OK$(NC)" || echo "$(RED)❌ Flux KO$(NC)"
+
+test-signatures: ## Tester le service signatures
+	@echo "$(CYAN)🧪 Test du service signatures...$(NC)"
+	@curl -s http://localhost/api/health > /dev/null && echo "$(GREEN)✅ Signatures OK$(NC)" || echo "$(RED)❌ Signatures KO$(NC)"
+
+test-methode: ## Tester le service méthode
+	@echo "$(CYAN)🧪 Test du service méthode...$(NC)"
+	@curl -s http://localhost/methode > /dev/null && echo "$(GREEN)✅ Méthode OK$(NC)" || echo "$(RED)❌ Méthode KO$(NC)"
+
+test-n8n: ## Tester le service n8n
+	@echo "$(CYAN)🧪 Test du service n8n...$(NC)"
+	@curl -s http://localhost/n8n/ > /dev/null && echo "$(GREEN)✅ n8n OK$(NC)" || echo "$(RED)❌ n8n KO$(NC)"
+
+test-all: test-carte test-flux test-signatures test-methode test-n8n ## Tester tous les services
+	@echo ""
+	@echo "$(GREEN)✅ Tests terminés!$(NC)"
+
+# Production
+
+prod-start: ## Démarrer en mode production
+	@echo "$(GREEN)🚀 Démarrage en mode PRODUCTION...$(NC)"
+	NODE_ENV=production $(COMPOSE) up -d --build
+	@echo "$(GREEN)✅ Services en production démarrés!$(NC)"
+
+prod-logs: ## Logs en mode production (pas de suivi)
+	$(COMPOSE) logs --tail=100
+
+# Valeur par défaut
+.DEFAULT_GOAL := help
+

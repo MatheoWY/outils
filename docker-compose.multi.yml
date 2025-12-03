@@ -1,0 +1,146 @@
+# Configuration Docker Compose - Architecture Multi-Services
+# 5 services indépendants:
+# - Carte Work&You (React + Nginx, port 80 interne)
+# - Check Flux (React + Nginx, port 80 interne)
+# - Signatures (React + Node.js/Express, port 3000 interne)
+# - Méthode Work&You (React + Python/FastAPI, port 8000 interne)
+# - n8n (Workflow automation, port 5678 interne)
+# Tous routés via Nginx sur le port 80 externe
+
+version: '3.8'
+
+services:
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: workandyou-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.multi.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - carte
+      - flux
+      - signatures
+      - methode
+      - n8n
+    networks:
+      - workandyou-network
+    restart: unless-stopped
+
+  # Service 1: Carte Work&You
+  carte:
+    build:
+      context: .
+      dockerfile: Dockerfile.carte
+    container_name: workandyou-carte
+    environment:
+      - NODE_ENV=production
+      - VITE_APP_NAME=Carte Work&You
+    networks:
+      - workandyou-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Service 2: Check Flux
+  flux:
+    build:
+      context: .
+      dockerfile: Dockerfile.flux
+    container_name: workandyou-flux
+    environment:
+      - NODE_ENV=production
+      - VITE_APP_NAME=Check Flux
+    networks:
+      - workandyou-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Service 3: Signatures (Frontend + Backend Node.js)
+  signatures:
+    build:
+      context: .
+      dockerfile: Dockerfile.signatures
+    container_name: workandyou-signatures
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - GITHUB_PAT=${GITHUB_PAT}
+      - REPO_OWNER=${REPO_OWNER:-MatheoWY}
+      - REPO_NAME=${REPO_NAME:-signatures}
+      - BRANCH=${BRANCH:-main}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - ALLOWED_DOMAIN=${ALLOWED_DOMAIN:-workandyou.fr}
+      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
+    networks:
+      - workandyou-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Service 4: Méthode Work&You (Frontend + Backend Python)
+  methode:
+    build:
+      context: .
+      dockerfile: Dockerfile.methode
+    container_name: workandyou-methode
+    environment:
+      - RUNPOD_API_URL=${RUNPOD_API_URL}
+      - RUNPOD_API_KEY=${RUNPOD_API_KEY}
+    networks:
+      - workandyou-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Service 5: n8n (Workflow Automation)
+  n8n:
+    build:
+      context: .
+      dockerfile: Dockerfile.n8n
+    container_name: workandyou-n8n
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-true}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://localhost/n8n/}
+      - GENERIC_TIMEZONE=Europe/Paris
+      - N8N_METRICS=true
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - workandyou-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  workandyou-network:
+    driver: bridge
+
+volumes:
+  n8n_data:
+    driver: local
+

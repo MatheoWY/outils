@@ -1,0 +1,39 @@
+# Dockerfile pour le service Méthode Work&You (Frontend + Backend Python)
+
+# Stage 1: Build le frontend React
+FROM node:20-alpine AS build-frontend
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+ENV VITE_APP_NAME="Méthode Work&You"
+RUN npm run build
+
+# Stage 2: Setup Python backend + serve frontend
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copier les fichiers Python
+COPY ["methode workandyou/requirements.txt", "./requirements.txt"]
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copier le backend Python
+COPY ["methode workandyou/main.py", "./main.py"]
+COPY ["methode workandyou/template", "./template"]
+
+# Copier le frontend build depuis le stage précédent
+COPY --from=build-frontend /app/dist /app/static
+
+# Configuration pour servir le frontend via FastAPI
+RUN mkdir -p /app/static
+
+EXPOSE 8000
+
+# Lancer avec uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+

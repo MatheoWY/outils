@@ -1,0 +1,42 @@
+# Dockerfile pour le service Signatures (Frontend + Backend Node.js)
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Copier les dépendances
+COPY package*.json ./
+RUN npm ci
+
+# Copier le code source
+COPY . .
+
+# Build le frontend
+ENV VITE_APP_NAME="Signatures"
+RUN npm run build
+
+# Stage de production avec Node.js
+FROM node:20-alpine
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copier le build du frontend
+COPY --from=build /app/dist /app/dist
+
+# Copier le serveur backend
+COPY server /app/server
+COPY package*.json /app/
+
+# Installer uniquement les dépendances de production
+RUN npm ci --omit=dev
+
+# Copier les assets publics pour signatures
+COPY public/signatures /app/public/signatures
+
+EXPOSE 3000
+
+ENV PORT=3000
+
+CMD ["node", "server/index.js"]
+

@@ -9,6 +9,7 @@ import Flux from "./pages/Flux";
 import NotFound from "./pages/NotFound";
 import Signatures from "./pages/Signatures";
 import MethodeWorkAndYou from "./pages/MethodeWorkAndYou";
+import N8n from "./pages/N8n";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/flux" element={<Flux />} />
           <Route path="/signatures" element={<Signatures />} />
           <Route path="/methode" element={<MethodeWorkAndYou />} />
+          <Route path="/n8n" element={<N8n />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -54,6 +54,7 @@ const Signatures = () => {
     uploadData.append('lastName', formData.lastName);
 
     try {
+      // Utilise '/api/upload' qui est proxifié en dev et routé par Nginx en prod
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: uploadData,

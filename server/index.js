@@ -28,6 +28,65 @@ const publicSignaturesDir = path.join(appRoot, "public", "signatures");
 
 const app = express();
 
+const FLUX_SOURCES = [
+  {
+    key: "hellowork",
+    url: "https://master.nicoka.com/jobboards/hellowork/workandyou.xml",
+    tagName: "offre",
+  },
+  {
+    key: "directemploi",
+    url: "https://master.nicoka.com/jobboards/directemploi/workandyou.xml",
+    tagName: "job",
+  },
+  {
+    key: "meteojob",
+    url: "https://master.nicoka.com/jobboards/meteojob/workandyou.xml",
+    tagName: "position",
+  },
+  {
+    key: "indeed",
+    url: "https://master.nicoka.com/jobboards/indeed/workandyou.xml",
+    tagName: "job",
+  },
+];
+
+function encodeUrlForProxy(url) {
+  return url.replace(/^https?:\/\//, "");
+}
+
+async function fetchFluxXml(url) {
+  const jinaUrl = `https://r.jina.ai/http/${encodeUrlForProxy(url)}`;
+  const attempts = [
+    url,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    jinaUrl,
+  ];
+  let lastError;
+  for (const attempt of attempts) {
+    try {
+      const response = await fetch(attempt, {
+        headers: { "User-Agent": "workandyou-flux-fetcher" },
+        cache: "no-store",
+      });
+      if (response.ok) {
+        return await response.text();
+      }
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Flux fetch failed");
+}
+
+function countTagOccurrences(xmlText, tagName) {
+  if (!xmlText) return 0;
+  const regex = new RegExp(`<${tagName}(\\s|>)`, "gi");
+  const matches = xmlText.match(regex);
+  return matches ? matches.length : 0;
+}
+
 // Configuration via env
 const GITHUB_PAT = process.env.GITHUB_PAT || process.env.VITE_GITHUB_PAT || "";
 const REPO_OWNER = process.env.REPO_OWNER || "MatheoWY";
@@ -358,6 +417,31 @@ app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => 
   } catch (err) {
     res.status(500).json({ error: String(err?.message || err) });
   }
+});
+
+app.get("/api/flux-counts", requireAuth, async (_req, res) => {
+  const results = {};
+  const errors = {};
+  await Promise.all(
+    FLUX_SOURCES.map(async (source) => {
+      try {
+        const xmlText = await fetchFluxXml(source.url);
+        results[source.key] = countTagOccurrences(xmlText, source.tagName);
+        // eslint-disable-next-line no-console
+        console.log(`[flux] ${source.key}: ${results[source.key]}`);
+      } catch (err) {
+        results[source.key] = 0;
+        errors[source.key] = err instanceof Error ? err.message : "Erreur inconnue";
+        // eslint-disable-next-line no-console
+        console.error(`[flux] ${source.key} error:`, err);
+      }
+    })
+  );
+  res.json({
+    ...results,
+    errors,
+    fetchedAt: new Date().toISOString(),
+  });
 });
 
 // Analyse de documents (simulation pour l'instant)

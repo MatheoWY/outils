@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from typing import List
 import requests  # Pour appeler Runpod
@@ -12,8 +13,16 @@ from dotenv import load_dotenv
 load_dotenv("../.env")
 
 app = FastAPI()
+
+# Monter les fichiers statiques (frontend React build)
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # Le dossier de gabarits dans ce projet est "template" (et non "templates")
-templates = Jinja2Templates(directory="template")
+if os.path.exists("template"):
+    templates = Jinja2Templates(directory="template")
+else:
+    templates = None
 
 # Configuration RunPod (depuis variables d'environnement)
 RUNPOD_API_URL = os.getenv("RUNPOD_API_URL", "")
@@ -31,7 +40,14 @@ else:
 # 1. Servir le site web (le fichier HTML)
 @app.get("/", response_class=HTMLResponse)
 async def get_frontend(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    # En production Docker, servir le build React
+    if os.path.exists("static/index.html"):
+        return FileResponse("static/index.html")
+    # En développement, utiliser le template
+    elif templates:
+        return templates.TemplateResponse("index.html", {"request": request})
+    else:
+        return HTMLResponse(content="<h1>Méthode Work&You</h1><p>Service en cours de démarrage...</p>", status_code=200)
 
 # 2. Endpoint qui reçoit les fichiers de l'utilisateur
 @app.post("/submit-analysis")
