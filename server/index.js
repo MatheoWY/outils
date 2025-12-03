@@ -268,16 +268,17 @@ app.get("/auth/logout", (req, res, next) => {
   });
 });
 
-// Statut
+// Statut (pour auth_request Nginx : 200 = OK, 401 = non authentifié)
 app.get("/auth/status", (req, res) => {
   if (!AUTH_ENABLED) {
-    // En DEV sans auth, on renvoie un faux statut connecté
-    return res.json({ authenticated: true, user: { dev: true } });
+    // En DEV sans auth, on considère authentifié
+    return res.status(200).json({ authenticated: true, user: { dev: true } });
   }
   if (isAuthenticatedAndAllowed(req)) {
-    return res.json({ authenticated: true, user: req.user });
+    return res.status(200).json({ authenticated: true, user: req.user });
   }
-  return res.json({ authenticated: false });
+  // Non authentifié : retourner 401 pour que Nginx redirige
+  return res.status(401).json({ authenticated: false });
 });
 
 app.get("/auth/forbidden", (_req, res) => {
@@ -419,8 +420,8 @@ app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => 
   }
 });
 
-// API publique (pas d'auth requise) car appelée depuis le service Flux
-app.get("/api/flux-counts", async (_req, res) => {
+// API protégée par auth
+app.get("/api/flux-counts", requireAuth, async (_req, res) => {
   const results = {};
   const errors = {};
   await Promise.all(
