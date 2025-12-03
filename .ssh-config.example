@@ -1,0 +1,15 @@
+# Configuration SSH pour déploiement automatisé
+# Copier ce fichier vers .ssh-config et remplir les valeurs
+
+# Informations serveur Hostinger
+SSH_HOST=votre-ip-ou-domaine.com
+SSH_USER=appuser
+SSH_PORT=22
+SSH_KEY_PATH=~/.ssh/id_rsa
+
+# Chemin de l'application sur le serveur
+REMOTE_APP_DIR=~/outils-workandyou
+
+# Branche Git à déployer
+GIT_BRANCH=production
+
