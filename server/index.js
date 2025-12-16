@@ -104,7 +104,6 @@ const GOOGLE_CALLBACK_URL =
 const N8N_URL = process.env.N8N_URL || "http://n8n:5678";
 // Auth activée en production si les identifiants Google sont configurés
 const AUTH_ENABLED = 
-  process.env.NODE_ENV === "production" && 
   GOOGLE_CLIENT_ID && 
   GOOGLE_CLIENT_SECRET && 
   SESSION_SECRET;
@@ -161,11 +160,11 @@ passport.deserializeUser((obj, done) => {
 if (!AUTH_ENABLED) {
   // eslint-disable-next-line no-console
   console.warn(
-    `⚠️  AUTH DÉSACTIVÉE - Mode: ${process.env.NODE_ENV || "development"}`
+    `⚠️  AUTH DÉSACTIVÉE - Config manquante (Google ID/Secret ou Session Secret)`
   );
   // eslint-disable-next-line no-console
   console.warn(
-    "   En production, configurez GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET et SESSION_SECRET"
+    "   Pour activer l'auth, configurez GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET et SESSION_SECRET"
   );
 } else {
   // eslint-disable-next-line no-console
@@ -214,8 +213,9 @@ function isAuthenticatedAndAllowed(req) {
 }
 
 function requireAuth(req, res, next) {
-  // En DEV (ou si AUTH désactivée), on laisse passer
-  if (!AUTH_ENABLED || process.env.NODE_ENV !== "production") {
+  // Si AUTH_ENABLED est false (pas de secrets), on laisse passer pour éviter de bloquer tout le monde
+  // si la config est cassée. Mais on log un warning au démarrage.
+  if (!AUTH_ENABLED) {
     return next();
   }
   if (isAuthenticatedAndAllowed(req)) {
@@ -613,7 +613,7 @@ app.use(
 if (fs.existsSync(distDir)) {
   // Servir les assets statiques (CSS, JS, images) SANS auth (nécessaires pour le chargement de la page)
   app.use("/assets", express.static(path.join(distDir, "assets"), {
-    setHeaders: (res) => {
+      setHeaders: (res) => {
       res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
     },
   }));
@@ -627,7 +627,7 @@ if (fs.existsSync(distDir)) {
       } else {
         res.setHeader("Cache-Control", "public, max-age=31536000");
       }
-    },
+      },
   }));
 
   // Also serve the embedded static signatures assets if needed (safety)
