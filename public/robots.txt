@@ -1,2 +1,7 @@
 User-agent: *
 Disallow: /
+
+# Blocage complet de l'indexation pour tous les moteurs de recherche
+# Ce site est privé et nécessite une authentification Google
+
+# Sitemap: Optionnel - pas de sitemap pour site privé
